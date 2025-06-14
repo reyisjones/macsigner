@@ -59,11 +59,15 @@ namespace MacSigner.Services
 
         public async Task SaveSettingsAsync(AppSettings settings)
         {
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+
             try
             {
-                if (!Directory.Exists(_settingsDirectory))
+                var settingsDirectory = Path.GetDirectoryName(_settingsFilePath);
+                if (!string.IsNullOrEmpty(settingsDirectory) && !Directory.Exists(settingsDirectory))
                 {
-                    Directory.CreateDirectory(_settingsDirectory);
+                    Directory.CreateDirectory(settingsDirectory);
                 }
 
                 var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
