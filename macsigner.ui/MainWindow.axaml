@@ -2,8 +2,180 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="macsigner.ui.MainWindow"
-        Title="macsigner.ui">
-    Welcome to Avalonia!
+        xmlns:vm="clr-namespace:MacSigner.ViewModels"
+        mc:Ignorable="d" 
+        d:DesignWidth="1200" d:DesignHeight="800"
+        Width="1200" Height="800"
+        MinWidth="1000" MinHeight="600"
+        x:Class="MacSigner.MainWindow"
+        Title="MacSigner - Digital Code Signing Tool"
+        WindowStartupLocation="CenterScreen"
+        CanResize="true">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header Section -->
+        <Border Grid.Row="0" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,0,0,1" Padding="20">
+            <StackPanel>
+                <TextBlock Text="MacSigner - Digital Code Signing Tool" 
+                          FontSize="24" FontWeight="Bold" 
+                          Foreground="#212529" Margin="0,0,0,10"/>
+                
+                <!-- Path Selection -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Text="Project Path:" 
+                              VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    
+                    <TextBox Grid.Column="1" Text="{Binding SelectedPath}" 
+                            Watermark="Select a directory to scan for signable files"
+                            Margin="0,0,10,0"/>
+                    
+                    <Button Grid.Column="2" Content="Browse..." 
+                           Command="{Binding BrowseCommand}"
+                           Margin="0,0,10,0"/>
+                    
+                    <Button Grid.Column="3" Content="Scan" 
+                           Command="{Binding ScanCommand}"
+                           IsEnabled="{Binding CanScan}"
+                           Margin="0,0,10,0"/>
+                           
+                    <Button Grid.Column="4" Content="Settings" 
+                           Command="{Binding OpenSettingsCommand}"/>
+                </Grid>
+                
+                <!-- File Summary -->
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="{Binding TotalFiles}" FontWeight="Bold"/>
+                        <TextBlock Text=" total files, " Margin="5,0"/>
+                        <TextBlock Text="{Binding SelectedFiles}" FontWeight="Bold" Foreground="#0078D4"/>
+                        <TextBlock Text=" selected for signing" Margin="5,0"/>
+                    </StackPanel>
+                    
+                    <Button Grid.Column="1" Content="Sign Selected Files" 
+                           Command="{Binding SignCommand}"
+                           IsEnabled="{Binding CanSign}"
+                           Background="#0078D4" Foreground="White"
+                           Padding="15,8"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content Area -->
+        <TabControl Grid.Row="1" Margin="20">
+            
+            <!-- Files Tab -->
+            <TabItem Header="Files to Sign">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- File Actions -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button Content="Select All" Margin="0,0,10,0"/>
+                        <Button Content="Select None" Margin="0,0,10,0"/>
+                        <Button Content="Refresh" Command="{Binding RefreshCommand}"/>
+                    </StackPanel>
+                    
+                    <!-- Files List -->
+                    <ListBox Grid.Row="1" 
+                            ItemsSource="{Binding SignableFiles}"
+                            ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0"/>
+                                    
+                                    <Border Grid.Column="1" 
+                                           Width="12" Height="12" CornerRadius="6"
+                                           Background="Gray" Margin="0,0,10,0"/>
+                                    
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding FileName}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding FilePath}" FontSize="11" Foreground="Gray"/>
+                                    </StackPanel>
+                                    
+                                    <TextBlock Grid.Column="3" Text="{Binding Status}" 
+                                              VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </TabItem>
+            
+            <!-- Signing Requests Tab -->
+            <TabItem Header="Signing Requests">
+                <ListBox ItemsSource="{Binding SigningRequests}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="Gray" BorderThickness="1" Margin="5" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding RequestId}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Status}"/>
+                                    <TextBlock Text="{Binding TotalFiles, StringFormat='Files: {0}'}"/>
+                                    <TextBlock Text="{Binding CreatedAt, StringFormat='Created: {0:yyyy-MM-dd HH:mm:ss}'}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,1,0,0" Padding="20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" 
+                          VerticalAlignment="Center"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ProgressBar IsVisible="{Binding IsScanning}" 
+                                IsIndeterminate="True" 
+                                Width="100" Height="6" Margin="0,0,10,0"/>
+                    
+                    <ProgressBar IsVisible="{Binding IsSigning}" 
+                                Value="{Binding ProgressPercentage}" 
+                                Maximum="100"
+                                Width="100" Height="6" Margin="0,0,10,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
