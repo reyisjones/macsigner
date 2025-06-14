@@ -8,7 +8,33 @@ A comprehensive test suite for the MacSigner application, implementing unit test
 macsigner.ui.tests/
 ├── Commands/              # Command pattern tests
 │   └── SignCommandTests.cs
-├── Helpers/               # Test utilities and test doubles
+├── Helpers/               # Test utilities and tes**Test Project Version**: 1.0  
+**Target Framework**: .NET 8.0
+
+## 🚀 Quick Start
+
+### First Time Setup
+```bash
+# 1. Verify .NET SDK version (8.0.201+ required)
+dotnet --version
+
+# 2. Restore packages
+dotnet restore
+
+# 3. Build solution
+dotnet build
+
+# 4. Run a quick test to verify setup
+dotnet test --filter "FullyQualifiedName~SettingsService" --verbosity normal
+```
+
+### Expected Output
+```
+Test Run Successful.
+Total tests: 9
+     Passed: 9
+ Total time: ~0.5 Seconds
+```doubles
 │   └── TestHelpers.cs     # Mock factories and test utilities
 ├── Integration/           # End-to-end integration tests
 │   └── EndToEndIntegrationTests.cs
@@ -48,6 +74,28 @@ macsigner.ui.tests/
 - **Microsoft.Extensions.Logging 8.0.1** - Logging infrastructure
 - **Microsoft.Reactive.Testing 6.0.1** - Async and reactive testing utilities
 - **coverlet.collector 6.0.2** - Code coverage collection
+
+## ⚙️ Prerequisites & Setup
+
+### .NET SDK Requirements
+- **Minimum .NET SDK**: 8.0.201 or higher
+- **Target Framework**: .NET 8.0
+- **Recommended**: Latest .NET 8.x SDK for best compatibility
+
+### Check Your .NET Installation
+```bash
+# Check current SDK version
+dotnet --version
+
+# List all installed SDKs
+dotnet --list-sdks
+
+# Check runtime versions
+dotnet --list-runtimes
+```
+
+### .NET SDK Version Compatibility
+The project targets **.NET 8.0** for maximum compatibility. If you encounter framework targeting errors, ensure you have a compatible SDK installed.
 
 ## 🎯 Test Categories
 
@@ -280,6 +328,38 @@ public class ModelTests
 
 ### Common Issues
 
+**✅ NETSDK1045: .NET SDK Version Incompatibility**
+```
+error NETSDK1045: The current .NET SDK does not support targeting .NET 9.0. 
+Either target .NET 8.0 or lower, or use a version of the .NET SDK that supports .NET 9.0.
+```
+
+**Root Cause**: Project was targeting .NET 9.0 but system has .NET 8.x SDK  
+**Solution**: Projects have been updated to target .NET 8.0 for compatibility
+
+**Verification Steps**:
+```bash
+# Check your SDK version
+dotnet --version
+
+# Should show 8.0.x or higher
+# If you see 8.0.201 or later, you're good to go
+
+# Test the fix
+dotnet restore
+dotnet build
+dotnet test --filter "FullyQualifiedName~SettingsService"
+```
+
+**Alternative Solutions**:
+1. **Recommended**: Use .NET 8.0 (current project configuration)
+2. **Advanced**: Install .NET 9.0 SDK if you need latest features:
+   ```bash
+   # Download from: https://dotnet.microsoft.com/download
+   # Or using brew on macOS:
+   brew install --cask dotnet
+   ```
+
 **Test Discovery Issues**:
 ```bash
 # Clear test cache
@@ -304,4 +384,4 @@ mock.Setup(x => x.Method(It.IsAny<Type>()))
 
 **Last Updated**: June 14, 2025  
 **Test Project Version**: 1.0  
-**Target Framework**: .NET 9.0
+**Target Framework**: .NET 8.0
