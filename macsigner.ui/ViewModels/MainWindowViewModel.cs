@@ -5,6 +5,9 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using MacSigner.Models;
 using MacSigner.Services;
@@ -44,6 +47,7 @@ namespace MacSigner.ViewModels
 
             // Initialize commands with proper schedulers
             BrowseCommand = ReactiveCommand.CreateFromTask(BrowseForDirectory);
+            PastePathCommand = ReactiveCommand.CreateFromTask(PastePathAndOpenInFinder);
             ScanCommand = ReactiveCommand.CreateFromTask(ScanDirectory, 
                 this.WhenAnyValue(x => x.CanScan).ObserveOn(RxApp.MainThreadScheduler));
             SignCommand = ReactiveCommand.CreateFromTask(SignSelectedFiles, 
@@ -149,6 +153,7 @@ namespace MacSigner.ViewModels
         public int SelectedFiles => SignableFiles.Count(f => f.IsSelected);
 
         public ICommand BrowseCommand { get; }
+        public ICommand PastePathCommand { get; }
         public ICommand ScanCommand { get; }
         public ICommand SignCommand { get; }
         public ICommand OpenSettingsCommand { get; }
@@ -558,6 +563,143 @@ namespace MacSigner.ViewModels
             {
                 IsValid = isValid;
                 ErrorMessage = errorMessage;
+            }
+        }
+
+        private async Task PastePathAndOpenInFinder()
+        {
+            try
+            {
+                // Get text from clipboard
+                var clipboardText = await GetClipboardTextAsync();
+                
+                if (string.IsNullOrWhiteSpace(clipboardText))
+                {
+                    StatusMessage = "No text found in clipboard";
+                    return;
+                }
+
+                // Trim and clean the path
+                var filePath = clipboardText.Trim().Trim('"');
+                
+                // Validate that the path exists
+                if (!File.Exists(filePath) && !Directory.Exists(filePath))
+                {
+                    StatusMessage = $"Path does not exist: {filePath}";
+                    return;
+                }
+
+                // If it's a file, get the directory
+                string directoryPath;
+                if (File.Exists(filePath))
+                {
+                    directoryPath = Path.GetDirectoryName(filePath) ?? filePath;
+                }
+                else
+                {
+                    directoryPath = filePath;
+                }
+
+                // Update the selected path
+                SelectedPath = directoryPath;
+                
+                // Open Finder/Explorer to the location
+                await OpenInFileManagerAsync(filePath);
+                
+                StatusMessage = $"Opened path in Finder: {filePath}";
+                _logger.LogInformation($"Successfully opened path in Finder: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to paste path and open in Finder");
+                StatusMessage = "Failed to paste path or open in Finder";
+            }
+        }
+
+        private async Task<string> GetClipboardTextAsync()
+        {
+            try
+            {
+                // Simple approach: Try to get clipboard from main window
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    var mainWindow = desktop.MainWindow;
+                    if (mainWindow?.Clipboard != null)
+                    {
+                        return await mainWindow.Clipboard.GetTextAsync() ?? string.Empty;
+                    }
+                }
+                
+                // Fallback: try to use system clipboard via System.Windows.Forms (if available)
+                // For now, return empty string if Avalonia clipboard is not accessible
+                _logger.LogWarning("Could not access clipboard through Avalonia");
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get clipboard text");
+                return string.Empty;
+            }
+        }
+
+        private async Task OpenInFileManagerAsync(string path)
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    if (OperatingSystem.IsMacOS())
+                    {
+                        // Open in Finder on macOS
+                        var process = new System.Diagnostics.Process
+                        {
+                            StartInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "open",
+                                Arguments = File.Exists(path) ? $"-R \"{path}\"" : $"\"{path}\"",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        process.Start();
+                    }
+                    else if (OperatingSystem.IsWindows())
+                    {
+                        // Open in Explorer on Windows
+                        var process = new System.Diagnostics.Process
+                        {
+                            StartInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "explorer.exe",
+                                Arguments = File.Exists(path) ? $"/select,\"{path}\"" : $"\"{path}\"",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        process.Start();
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
+                        // Open in file manager on Linux
+                        var directoryPath = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+                        var process = new System.Diagnostics.Process
+                        {
+                            StartInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "xdg-open",
+                                Arguments = $"\"{directoryPath}\"",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        process.Start();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open path in file manager");
+                throw;
             }
         }
     }
